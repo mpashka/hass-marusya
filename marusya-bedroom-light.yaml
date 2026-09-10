@@ -1,0 +1,32 @@
+- id: bedroom_light_left
+  name: Основной свет
+  description: Основной свет в спальне
+  room: Спальня
+  type: devices.types.light
+  custom_data:
+  capabilities:
+  - type: devices.capabilities.on_off
+    retrievable: false
+    parameters:
+    hooks:
+      on:
+        url: https://{hass_server}/api/services/switch/turn_on
+        method: POST
+        json:
+          area_id: bedroom
+        headers:
+          Authorization: Bearer {long-living-token}
+          Content-Type: application/json
+      off:
+        url: https://{hass_server}/api/services/switch/turn_off
+        method: POST
+        json:
+          area_id: bedroom
+        headers:
+          Authorization: Bearer {long-living-token}
+          Content-Type: application/json
+  device_info:
+    manufactorer: HomeAssistant
+    model: Virtual
+    hw_version: 0.1
+    sw_version: 0.1

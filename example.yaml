@@ -1,0 +1,32 @@
+- id: 1
+  name: Philips Hue
+  description: Philips Hue
+  room: Room
+  type: devices.types.light
+  custom_data:
+  capabilities:
+  - type: devices.capabilities.on_off
+    retrievable: true
+    parameters:
+    hooks:
+      on:
+        url: https://maker.ifttt.com/trigger/hue_on/with/key/your_key
+        method: POST
+        json:
+          state: "on"
+      off:
+        url: https://maker.ifttt.com/trigger/hue_off/with/key/your_key
+        method: POST
+        json:
+          state: "off"
+      state:
+        url: https://maker.ifttt.com/trigger/hue_state/with/key/your_key
+        method: GET
+        headers:
+          Authorization: Bearer you_bearer_key
+          Content-Type: application/json
+  device_info:
+    manufacturer: Mail.RU
+    model: Virtual
+    hw_version: 0.1
+    sw_version: 0.1
