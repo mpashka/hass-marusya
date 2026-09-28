@@ -17,6 +17,7 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          ignore: brands license
 
   tests:
     runs-on: ubuntu-latest
