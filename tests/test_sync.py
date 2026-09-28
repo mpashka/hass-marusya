@@ -43,6 +43,7 @@ async def test_unchanged_description_touches_nothing(fake, parts):
 
     assert again.state == STATE_UNCHANGED
     assert fake.configs == configs_before
+    assert [d.uid for d in again.devices] == ["diy|lamp"] and again.missing == []
 
 
 async def test_change_links_the_new_and_drops_the_old(fake, parts):

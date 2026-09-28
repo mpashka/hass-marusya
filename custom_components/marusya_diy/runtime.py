@@ -150,7 +150,7 @@ class AccountRuntime:
                                CONF_CONFIG_NAME: linked.config_name if linked else None,
                                CONF_CONFIG_FINGERPRINT: linked.fingerprint if linked else None})
         state = STATE_LINKED if outcome.state == STATE_UNCHANGED else outcome.state
-        devices_seen = [d.name for d in outcome.devices] or (self.status.devices if outcome.state == STATE_UNCHANGED else [])
+        devices_seen = [d.name for d in outcome.devices]
         detail = f"not visible to Marusya: {', '.join(outcome.missing)}" if outcome.missing else ""
         return Status(state, detail, linked.config_name if linked else "", devices_seen, outcome.missing,
                       dt_util.utcnow())

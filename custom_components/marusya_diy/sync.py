@@ -69,7 +69,7 @@ async def async_sync(
         and previous.config_id in cabinet_ids
         and await client.diy_is_linked()
     ):
-        return SyncOutcome(STATE_UNCHANGED, previous)
+        return await _outcome(client, STATE_UNCHANGED, previous, device_ids)
 
     try:
         new = await cabinet.upload(config_name, text)
@@ -97,10 +97,14 @@ async def async_sync(
     for stale in await cabinet.configs():
         if stale.name == config_name and stale.id != new.id:
             await _remove_quietly(cabinet, stale.id)
+    return await _outcome(client, STATE_LINKED, Linked(new.id, config_name, new_fingerprint), device_ids)
+
+
+async def _outcome(client: MarusyaClient, state: str, linked: Linked, device_ids: list[str]) -> SyncOutcome:
     devices = await client.diy_devices()
     visible = {d.uid for d in devices}
     missing = [i for i in device_ids if f"diy|{i}" not in visible]
-    return SyncOutcome(STATE_LINKED, Linked(new.id, config_name, new_fingerprint), devices, missing)
+    return SyncOutcome(state, linked, devices, missing)
 
 
 async def _relink(client: MarusyaClient, cabinet: Cabinet, config_id: str) -> None:
