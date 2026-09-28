@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+title marusya_diy: варианты использования
+
+actor "Человек" as human
+actor "Скрипт настройки" as script
+actor "Колонка" as speaker
+
+rectangle "marusya_diy" {
+  usecase "Добавить аккаунт колонки\n(вход в VK)" as add <<@tag:vk-login>>
+  usecase "Дать сессию кабинета" as cab <<@tag:cabinet>>
+  usecase "Задать описание устройств" as dev <<@tag:diy-sync>>
+  usecase "Повторить вход\nпри истёкшей сессии" as reauth
+  usecase "Увидеть состояние DIY" as status
+  usecase "Синхронизировать\nконфигурацию" as sync <<@tag:diy-sync>>
+}
+
+human --> add
+human --> cab
+human --> dev
+human --> reauth
+human --> status
+script --> dev
+dev ..> sync : <<include>>
+add ..> sync : <<include>>
+speaker --> sync : видит устройства
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+title Синхронизация аккаунта (async_sync)
+
+participant "Синхронизатор" as sync <<@tag:diy-sync>>
+participant "Сборщик YAML" as yaml <<@tag:diy-sync>>
+participant "Клиент кабинета" as cab <<@tag:cabinet>>
+participant "Клиент Маруси" as api <<@tag:marusya-api>>
+database "Запись аккаунта" as entry
+
+sync -> yaml : описание + внешний адрес HA + токен хуков
+yaml --> sync : текст, отпечаток
+sync -> cab : список конфигураций
+alt отпечаток совпал и config_id в списке
+  sync --> entry : ничего не менять
+else
+  sync -> cab : загрузить <заголовок>.yaml
+  cab --> sync : id новой (разность списков)
+  sync -> api : providers → unlink, если привязан
+  sync -> api : link → адрес выбора
+  sync -> cab : выбрать новую, пройти callback
+  alt привязка удалась
+    sync -> api : устройства diy — сверка с описанием
+    sync -> entry : config_id, config_name, отпечаток
+    sync -> cab : удалить прежнюю
+  else отказ
+    sync -> api : link → выбрать прежнюю (если была)
+    sync -> cab : удалить новую
+    sync -> entry : состояние error (шаг, причина)
+  end
+end
+@enduml

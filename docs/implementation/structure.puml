@@ -1,0 +1,30 @@
+@startuml
+title marusya_diy: части
+
+package "marusya_diy" {
+  component "Записи и формы\n(config_flow, __init__)" as flow
+  component "Синхронизатор" as sync <<@tag:diy-sync>>
+  component "Сборщик YAML" as yaml <<@tag:diy-sync>>
+  component "Токен хуков" as token <<@tag:hook-token>>
+  component "Разбор входа" as login <<@tag:vk-login>>
+  component "Клиент Маруси" as api <<@tag:marusya-api>>
+  component "Клиент кабинета" as cab <<@tag:cabinet>>
+  component "Состояние DIY" as sensor <<@tag:diy-sync>>
+}
+database "Записи интеграции" as entries
+cloud "Сервер Маруси" as marusya
+cloud "Кабинет DIY" as cabinet
+
+flow --> login : адрес blank.html
+flow --> api : вход
+flow --> token : завести / отозвать
+flow --> sync : после загрузки записи
+flow --> entries
+sync --> yaml : текст конфигурации
+sync --> api : unlink, link, устройства
+sync --> cab : загрузить, выбрать, удалить
+sync --> entries : config_id, отпечаток
+sensor --> sync : состояние
+api --> marusya
+cab --> cabinet
+@enduml

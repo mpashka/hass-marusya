@@ -1,0 +1,17 @@
+@startuml
+title Аккаунт колонки: состояние DIY
+
+[*] --> syncing : запись загружена
+syncing --> linked : конфигурация привязана,\nустройства видны
+syncing --> unchanged : отпечаток совпал
+unchanged --> linked
+syncing --> no_devices : описание пустое
+syncing --> waiting_cabinet : нет записи кабинета\nили сессия кабинета истекла
+syncing --> reauth : 1001 / 4010 / 4012\nот сервера Маруси
+syncing --> error : отказ сервера или кабинета\n(шаг, причина)
+waiting_cabinet --> syncing : запись кабинета\nдобавлена или обновлена
+reauth --> syncing : повторный вход в VK
+error --> syncing : смена параметров,\nперезагрузка записи
+linked --> syncing : смена параметров
+no_devices --> syncing : смена параметров
+@enduml

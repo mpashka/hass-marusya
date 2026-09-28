@@ -1,0 +1,26 @@
+@startuml
+title marusya_diy: участники и вызовы
+
+actor "Человек" as human
+node "Браузер человека" as browser
+node "Home Assistant" as ha {
+  component "Интеграция marusya_diy" as integ <<@tag:diy-sync>>
+  component "REST API HA" as haapi
+  database "Записи интеграции" as entries
+}
+node "Скрипт настройки" as script
+cloud "VK OAuth / VK ID" as vk <<@tag:vk-login>>
+cloud "Сервер Маруси\nvc.go.mail.ru" as marusya <<@tag:marusya-api>>
+cloud "Кабинет DIY" as cabinet <<@tag:cabinet>>
+cloud "Облако Маруси (колонка)" as voice
+
+human --> browser : входит в VK, копирует адрес
+browser --> vk : вход
+human --> integ : вставляет адрес blank.html,\ncookie кабинета
+script --> haapi : описание устройств\n(options flow)
+haapi --> entries
+integ --> entries : сессии, описание, состояние
+integ --> marusya : сессия по токену VK,\nпровайдеры, unlink/link
+integ --> cabinet : загрузка YAML, выбор, удаление
+voice --> haapi : хук: turn_on / turn_off / state
+@enduml

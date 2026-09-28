@@ -1,0 +1,30 @@
+@startuml
+title Привязка конфигурации DIY к аккаунту Маруси без телефона
+
+participant "Интеграция" as integ <<@tag:diy-sync>>
+participant "Сервер Маруси" as api <<@tag:marusya-api>>
+participant "Кабинет DIY" as cab <<@tag:cabinet>>
+
+== Сессия аккаунта уже есть ==
+integ -> api : GET smarthouse/api/widget/providers/
+api --> integ : diy.is_auth
+alt DIY привязан
+  integ -> api : GET smarthouse/api/diy/unlink/
+  api --> integ : 200 success
+end
+integ -> api : GET smarthouse/api/diy/link/?session_id&device_id&deeplink=1
+api --> integ : 302 /smarthouse/diy/auth?…&state
+integ -> cab : GET /smarthouse/diy/auth?… (cookie sh_data)
+alt сессия кабинета истекла
+  cab --> integ : 302 /smarthouse/diy/login
+  note right of integ : повторный ввод сессии кабинета
+else
+  cab --> integ : 200, конфигурации с data-link
+  integ -> cab : POST /smarthouse/diy/auth?… house=<id>
+  cab --> integ : 302 /callback?code&state
+  integ -> cab : GET /callback?code&state
+  cab --> integ : 302 marusia://…/diy/callback?success=1
+  integ -> api : GET smarthouse/api/widget/index/
+  api --> integ : устройства provider=diy
+end
+@enduml

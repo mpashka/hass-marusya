@@ -1,0 +1,98 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marusya DIY",
+        "menu_options": {
+          "account": "Speaker account (VK login)",
+          "cabinet": "DIY cabinet session"
+        }
+      },
+      "account": {
+        "title": "Speaker account",
+        "description": "1. Open [the VK login]({login_url}) in a browser and log in with the VK account the speaker is linked to.\n2. The login ends on a blank page `oauth.vk.com/blank.html` or `oauth.vk.ru/blank.html`. Copy the whole address from the address bar and paste it below.\n\nThe address holds a VK token, valid for a short time: paste it right away.",
+        "data": {
+          "name": "Name (e.g. room of the speaker)",
+          "address": "Address of the blank page"
+        }
+      },
+      "cabinet": {
+        "title": "DIY cabinet session",
+        "description": "Log in to {cabinet_url} in a browser. Open DevTools → Application → Cookies → vc.go.mail.ru and copy the value of the `sh_data` cookie (a whole `Cookie` header also works). One session serves all speaker accounts and lives about 13 months.",
+        "data": {
+          "sh_data": "Cookie sh_data"
+        }
+      },
+      "reauth_account": {
+        "title": "Log in to VK again: {name}",
+        "description": "The Marusya session of «{name}» has expired. Open [the VK login]({login_url}) with the same VK account and paste the address of the blank page.",
+        "data": {
+          "address": "Address of the blank page"
+        }
+      },
+      "reauth_cabinet": {
+        "title": "DIY cabinet session expired",
+        "description": "Log in to {cabinet_url} again and paste the new value of the `sh_data` cookie.",
+        "data": {
+          "sh_data": "Cookie sh_data"
+        }
+      }
+    },
+    "error": {
+      "not_blank_page": "This is not the page the VK login ends on: expected oauth.vk.com/blank.html or oauth.vk.ru/blank.html.",
+      "vk_refused": "VK refused the login: the address carries an error instead of a token. Start the login again.",
+      "payload_unreadable": "The VK ID answer in the address cannot be read. Copy the address again, entirely.",
+      "no_token": "The address has no token: copy it after the login has finished.",
+      "marusya_refused": "The Marusya server did not accept the VK token. The token may be expired (a VK ID token lives 10 minutes): log in again.",
+      "wrong_account": "This is another VK account: log in with the account of this speaker.",
+      "cabinet_refused": "The DIY cabinet does not open with this cookie: it is expired or copied partially.",
+      "cannot_connect": "vc.go.mail.ru does not answer. Check the network of Home Assistant and try again."
+    },
+    "abort": {
+      "already_configured": "This VK account or the cabinet session is already added.",
+      "reauth_successful": "Done: the session is updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Devices",
+        "description": "YAML list of devices the speakers of this account control; format — {format_url}",
+        "data": {
+          "default_room": "Default room",
+          "devices": "Devices (YAML)",
+          "base_url": "External address of Home Assistant (optional)"
+        }
+      }
+    },
+    "error": {
+      "yaml_unreadable": "Not valid YAML: {where}",
+      "not_a_list": "Expected a YAML list of devices.",
+      "device_not_a_mapping": "Device {where} is not a mapping.",
+      "unknown_keys": "Unknown keys in device {where}.",
+      "bad_entity_id": "Device {where}: entity_id must look like domain.object_id.",
+      "no_name": "Device {where} has no name.",
+      "bad_type": "Device {where}: unknown type; allowed types are listed in the format description.",
+      "no_room": "Device {where} has no room and there is no default room.",
+      "bad_service": "Device {where}: service must look like domain/service.",
+      "bad_id": "Device {where}: id may contain only letters, digits, _ and -.",
+      "duplicate_ids": "Repeated device ids: {where}.",
+      "unknown_entities": "No such entities in Home Assistant: {where}."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "diy_state": {
+        "name": "DIY state",
+        "state": {
+          "syncing": "Syncing",
+          "linked": "Linked",
+          "no_devices": "No devices",
+          "waiting_cabinet": "Waiting for the cabinet session",
+          "reauth": "VK login required",
+          "error": "Error"
+        }
+      }
+    }
+  }
+}
