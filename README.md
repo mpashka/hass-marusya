@@ -76,3 +76,7 @@ DIY-хуки умеют включить, выключить и прочитат
 - `devices.types.iron` — утюг
 - `devices.types.sensor` — датчик
 - `devices.types.other` — прочее устройство
+
+## Лицензия
+
+[Apache License 2.0](LICENSE).
