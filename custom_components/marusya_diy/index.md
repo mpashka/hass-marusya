@@ -18,3 +18,4 @@ tags: "@tag:diy-sync @tag:marusya-api @tag:cabinet @tag:vk-login @tag:hook-token
 - `sensor.py` — сущность «Состояние DIY».
 - `const.py` — имена и адреса.
 - `manifest.json`, `strings.json`, `translations/` — описание интеграции для Home Assistant, тексты en/ru.
+- `brand/` — значок (`icon.png` 256, `icon@2x.png` 512): знак Маруси с сайта marusia.vk.com; HA ≥ 2026.3 берёт его отсюда, HACS проверяет его наличие.
