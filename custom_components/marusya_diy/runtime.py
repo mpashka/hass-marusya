@@ -11,9 +11,13 @@ from datetime import datetime
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_create_clientsession, async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url
+from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
@@ -23,9 +27,10 @@ from .cabinet import Cabinet, CabinetError, CabinetSessionGone
 from .const import (
     CONF_ACCOUNT_ID, CONF_CONFIG_FINGERPRINT, CONF_CONFIG_ID, CONF_CONFIG_NAME, CONF_DEVICE_ID,
     CONF_HOOK_REFRESH_TOKEN_ID, CONF_HOOK_TOKEN, CONF_HOOK_USER_ID, CONF_SESSION_ID, CONF_SESSION_SECRET,
-    CONF_VK_USER_ID, DOMAIN, KIND, KIND_ACCOUNT, KIND_CABINET, OPT_BASE_URL, OPT_DEFAULT_ROOM, OPT_DEVICES,
+    CONF_VK_USER_ID, DOMAIN, KIND, KIND_ACCOUNT, KIND_CABINET, OPT_BASE_URL, OPT_ENTITIES, OPT_LABEL,
 )
-from .diy_yaml import DevicesError, parse_devices, render
+from .diy_yaml import Device, DevicesError, render
+from .entity_devices import account_devices
 from .sync import STATE_LINKED, STATE_NO_DEVICES, STATE_UNCHANGED, Linked, SyncError, async_sync
 
 _LOGGER = logging.getLogger(__name__)
@@ -89,6 +94,28 @@ class AccountRuntime:
         self._listeners: list[Callable[[], None]] = []
         self.status = Status()
         self.options_seen = dict(entry.options)
+        self._built: list[Device] | None = None
+        self._started = asyncio.Event()
+        entry.async_on_unload(async_at_started(hass, self._on_started))
+        for event_type in (er.EVENT_ENTITY_REGISTRY_UPDATED, dr.EVENT_DEVICE_REGISTRY_UPDATED,
+                           ar.EVENT_AREA_REGISTRY_UPDATED):
+            entry.async_on_unload(hass.bus.async_listen(event_type, self._on_registry_updated))
+
+    async def _on_started(self, hass: HomeAssistant) -> None:
+        self._started.set()
+
+    @callback
+    def _on_registry_updated(self, event: Event) -> None:
+        """Picked devices follow names, areas and labels; the cloud is asked only when the list really changed."""
+        options = self._entry.options
+        if not (options.get(OPT_LABEL) or options.get(OPT_ENTITIES)) or self._built is None:
+            return
+        try:
+            devices = account_devices(self._hass, options).devices
+        except DevicesError:
+            return
+        if devices != self._built:
+            self.schedule()
 
     @callback
     def add_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
@@ -100,6 +127,7 @@ class AccountRuntime:
         self._entry.async_create_background_task(self._hass, self.async_run(force), f"{DOMAIN} sync")
 
     async def async_run(self, force: bool = False) -> None:
+        await self._started.wait()
         async with self._lock:
             self._set(Status(STATE_SYNCING, config_name=self.status.config_name))
             self.options_seen = dict(self._entry.options)
@@ -125,10 +153,11 @@ class AccountRuntime:
         if cabinet is None:
             return Status(STATE_WAITING_CABINET, "no DIY cabinet session: add the «DIY cabinet session» entry")
         try:
-            devices = parse_devices(self._entry.options.get(OPT_DEVICES, ""),
-                                    self._entry.options.get(OPT_DEFAULT_ROOM, ""))
+            picked = account_devices(self._hass, self._entry.options)
         except DevicesError as err:
+            self._built = []
             return Status(STATE_ERROR, f"device description: {err}")
+        devices = self._built = picked.devices
         text = ""
         if devices:
             try:
@@ -151,7 +180,12 @@ class AccountRuntime:
                                CONF_CONFIG_FINGERPRINT: linked.fingerprint if linked else None})
         state = STATE_LINKED if outcome.state == STATE_UNCHANGED else outcome.state
         devices_seen = [d.name for d in outcome.devices]
-        detail = f"not visible to Marusya: {', '.join(outcome.missing)}" if outcome.missing else ""
+        notes = []
+        if outcome.missing:
+            notes.append(f"not visible to Marusya: {', '.join(outcome.missing)}")
+        if picked.skipped:
+            notes.append(f"labeled but not supported: {', '.join(picked.skipped)}")
+        detail = "; ".join(notes)
         return Status(state, detail, linked.config_name if linked else "", devices_seen, outcome.missing,
                       dt_util.utcnow())
 

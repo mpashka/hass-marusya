@@ -57,10 +57,12 @@
     "step": {
       "init": {
         "title": "Devices",
-        "description": "YAML list of devices the speakers of this account control; format — {format_url}",
+        "description": "Devices the speakers of this account see: entities with the label, entities picked from the list and the YAML list, all together. Name is the entity name, type follows its domain, room is its area or the default room. YAML describes a device precisely and wins over the same picked entity; format — {format_url}",
         "data": {
           "default_room": "Default room",
-          "devices": "Devices (YAML)",
+          "label": "Label: every entity with it",
+          "entities": "Entities",
+          "devices": "Devices (YAML, optional)",
           "base_url": "External address of Home Assistant (optional)"
         }
       }

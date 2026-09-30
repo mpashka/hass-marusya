@@ -14,6 +14,7 @@ tags: "@tag:diy-sync @tag:marusya-api @tag:cabinet @tag:vk-login @tag:hook-token
 - `cabinet.py` — клиент кабинета DIY.
 - `vk_login.py` — разбор адреса, которым кончается вход в VK.
 - `diy_yaml.py` — описание устройств: проверка и сборка конфигурации DIY.
+- `entity_devices.py` — устройства аккаунта: YAML плюс сущности с меткой и из списка.
 - `hook_token.py` — служебный пользователь и токен хуков.
 - `sensor.py` — сущность «Состояние DIY».
 - `const.py` — имена и адреса.

@@ -11,7 +11,9 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+from homeassistant.helpers.selector import (
+    EntitySelector, EntitySelectorConfig, LabelSelector, TextSelector, TextSelectorConfig, TextSelectorType,
+)
 from homeassistant.util import dt as dt_util
 
 from .api import MarusyaClient, MarusyaError, Session
@@ -19,9 +21,10 @@ from .cabinet import Cabinet, CabinetError, CabinetSessionGone
 from .const import (
     CABINET_UNIQUE_ID, CONF_ACCOUNT_ID, CONF_DEVICE_ID, CONF_SESSION_ID, CONF_SESSION_SECRET, CONF_SH_DATA,
     CONF_SH_DATA_SET, CONF_VK_USER_ID, DOMAIN, KIND, KIND_ACCOUNT, KIND_CABINET, OPT_BASE_URL,
-    OPT_DEFAULT_ROOM, OPT_DEVICES, VK_LOGIN_URL,
+    OPT_DEFAULT_ROOM, OPT_DEVICES, OPT_ENTITIES, OPT_LABEL, VK_LOGIN_URL,
 )
-from .diy_yaml import DevicesError, parse_devices
+from .diy_yaml import DevicesError
+from .entity_devices import PICKABLE_DOMAINS, account_devices
 from .runtime import new_cabinet_http
 from .vk_login import LoginAddressError, parse_login_address
 
@@ -157,7 +160,7 @@ class DevicesOptionsFlow(OptionsFlow):
         placeholders = {"where": "", "format_url": FORMAT_URL}
         if user_input is not None:
             try:
-                devices = parse_devices(user_input.get(OPT_DEVICES, ""), user_input.get(OPT_DEFAULT_ROOM, ""))
+                devices = account_devices(self.hass, user_input).devices
             except DevicesError as err:
                 errors[OPT_DEVICES], placeholders["where"] = err.reason, err.where
             else:
@@ -168,6 +171,9 @@ class DevicesOptionsFlow(OptionsFlow):
                 return self.async_create_entry(data=user_input)
         schema = vol.Schema({
             vol.Optional(OPT_DEFAULT_ROOM, default=""): str,
+            vol.Optional(OPT_LABEL): LabelSelector(),
+            vol.Optional(OPT_ENTITIES, default=[]): EntitySelector(
+                EntitySelectorConfig(domain=PICKABLE_DOMAINS, multiple=True)),
             vol.Optional(OPT_DEVICES, default=""): TextSelector(TextSelectorConfig(multiline=True)),
             vol.Optional(OPT_BASE_URL): TextSelector(TextSelectorConfig(type=TextSelectorType.URL)),
         })

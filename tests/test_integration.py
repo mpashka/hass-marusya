@@ -5,11 +5,13 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import label_registry as lr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.marusya_diy.const import (
     CONF_CONFIG_ID, CONF_HOOK_USER_ID, CONF_SH_DATA, DOMAIN, KIND, KIND_ACCOUNT, KIND_CABINET, OPT_BASE_URL,
-    OPT_DEFAULT_ROOM, OPT_DEVICES,
+    OPT_DEFAULT_ROOM, OPT_DEVICES, OPT_LABEL,
 )
 
 from .fake_marusya import FOREIGN_VK_TOKEN, SH_DATA
@@ -136,3 +138,27 @@ async def test_expired_marusya_session_starts_reauth(hass, fake, cabinet_http, l
     assert result["reason"] == "reauth_successful"
     await hass.async_block_till_done(wait_background_tasks=True)
     assert sensor(hass).state == "linked"
+
+
+async def test_labeling_an_entity_adds_it_to_the_speaker(hass, fake, cabinet_http):
+    registry = er.async_get(hass)
+    for object_id, name in (("kitchen", "Свет"), ("kettle", "Чайник")):
+        registry.async_get_or_create("light", "test", object_id, suggested_object_id=object_id)
+        hass.states.async_set(f"light.{object_id}", "off", {"friendly_name": name})
+    label = lr.async_get(hass).async_create("Маруся: кухня")
+    registry.async_update_entity("light.kitchen", labels={label.label_id})
+    await add_account(hass)
+    await add_cabinet(hass, SH_DATA)
+    account = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data[KIND] == KIND_ACCOUNT)
+    result = await hass.config_entries.options.async_init(account.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {
+        OPT_DEFAULT_ROOM: "Кухня", OPT_LABEL: label.label_id, OPT_BASE_URL: "https://ha.example"})
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert sensor(hass).attributes["devices"] == ["Свет"]
+
+    registry.async_update_entity("light.kettle", labels={label.label_id})
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    assert sensor(hass).state == "linked"
+    assert sorted(sensor(hass).attributes["devices"]) == ["Свет", "Чайник"]
+    assert "light/turn_on" in fake.configs[fake.linked][1]
